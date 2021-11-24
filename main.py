@@ -94,4 +94,5 @@ if __name__ == "__main__":
 
     search_engine = engine.SearchEngine(root, mode, query, verbose)
     search_engine.interface.test()
+    search_engine.crawl.crawl()
     # search_engine.start()
