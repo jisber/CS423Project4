@@ -10,10 +10,22 @@ class SearchInterface():
         self.query = query
 
     def listen(self):
-        pass
+        if self.mode == 'c' and self.query != '':
+            self.engine.handel_query(self.query)
+        elif self.mode == 'i':
+            print("----------------------------------")
+            print("|         UTK EECS SEARCH        |")
+            print("__________________________________")
+            while 1:
+                var = input()
+                self.handle_input(var)
 
-    def handle_input(self):
-        pass
-
-    def test(self):
-        self.engine.start(self)
+    def handle_input(self, var):
+        if var == ':exit':
+            self.engine.exit()
+        elif var == ':train':
+            self.engine.train()
+        elif var == ':delete':
+            self.engine.delete()
+        else:
+            self.engine.handel_query(var)
