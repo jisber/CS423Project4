@@ -27,7 +27,9 @@ class SearchEngine():
         self.crawl = crawler.WebCrawler(self.root, self.verbose)
         self.interface = interface.SearchInterface(self.mode, self, self.query)
         self.clean_docs = []
+        self.temp_docs = []
         self.links = []
+        self.num = 2
 
     def start(self):
         self.listen()
@@ -98,26 +100,30 @@ class SearchEngine():
         # Print the articles and their similarity values
         # print(self.clean_docs)
 
-        num = 0
+        # num = 0
         if len(self.links) < 100:
-            num = 2
+            self.num = 2
         elif len(self.links) < 1000:
-            num = 3
+            self.num = 3
         elif len(self.links) < 10000:
-            num = 4
+            self.num = 4
 
+
+        used_links = []
         count = 1
         break_count = -1
         for k, v in sim_sorted:
             if v > 0:
                 break_count = 1
                 index = self.clean_docs[k]
-                index = index[:num]
+                index = index[:self.num]
                 index = re.sub("[^0-9]", "", index)
-                print( "[" + str(count) + "] " + str(self.links[int(index)]) + " - (" + str("{:.2f}".format(v)) + ')')
-                count += 1
-                if count > 5:
-                    break
+                if self.links[int(index)] not in used_links:
+                    print( "[" + str(count) + "] " + str(self.links[int(index)]) + " - (" + str("{:.2f}".format(v)) + ')')
+                    used_links.append(self.links[int(index)])
+                    count += 1
+                    if count > 5:
+                        break
 
         if break_count == -1:
             print("Your search did not match any documents")
@@ -126,6 +132,30 @@ class SearchEngine():
         self.interface.listen()
 
     def compute_td_idf(self):
+        # print(self.clean_docs[:12])
+        #
+        # def parse_string(i):
+        #     tmp_l = i.split()
+        #     tmp_str = tmp_l[0]
+        #     index = re.sub("[^0-9]", "", tmp_str)
+        #     return index
+        #
+        # con = 0
+        # curr_para = None
+        # tmp_para = []
+        # for count, i in enumerate(self.clean_docs):
+        #     curr_str = i
+        #     next_str = self.clean_docs[count + 1]
+        #     curr_str_para = parse_string(curr_str)
+        #     next_str_para = parse_string(self.clean_docs[count + 1])
+        #     if curr_str_para == next_str_para:
+        #         curr_para = curr_str + next_str
+        #     else:
+        #         tmp_para.append(curr_para)
+        #     con += 1
+        #     if con == 12:
+        #         print(tmp_para)
+        #         exit()
         # Step 2: Vectorize the documents
         # Use the Scikit-learn built-in vectorizer.
         # Instantiate the Tfidfvectorizer
