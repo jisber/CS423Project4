@@ -35,7 +35,7 @@ for d in docs:
 
 # Instantiate the Tfidfvectorizer
 tfidf_vectorizer=TfidfVectorizer() 
- 
+
 # Send our docs into the Vectorizer
 tfidf_vectorizer_vectors=tfidf_vectorizer.fit_transform(docs)
 
@@ -48,7 +48,7 @@ df = pd.DataFrame(X, index=tfidf_vectorizer.get_feature_names())
 
 # [ RETRIEVAL STAGE ]
 
-query = 'program'
+query = 'and'
 
 # Vectorize the query.
 q = [query]

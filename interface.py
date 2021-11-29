@@ -28,4 +28,4 @@ class SearchInterface():
         elif var == ':delete':
             self.engine.delete()
         else:
-            self.engine.handel_query(var)
+            self.engine.handle_query(var)

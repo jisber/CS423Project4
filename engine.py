@@ -1,6 +1,7 @@
 # Jacob Isber
 # File:
 # Desc:
+import os
 
 import crawler
 import interface
@@ -8,6 +9,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import re, string
 import pandas as pd
 import numpy as np
+from os import path
+import pickle
+import warnings
+
 
 class SearchEngine():
 
@@ -20,7 +25,8 @@ class SearchEngine():
         # self.engine = SearchEngine(self.root, self.mode, self.query, self.verbose):exi
         self.crawl = crawler.WebCrawler(self.root, self.verbose)
         self.interface = interface.SearchInterface(self.mode, self, self.query)
-        self.clean_docs = None
+        self.clean_docs = []
+        self.links = []
 
     def start(self):
         print("Running start")
@@ -28,30 +34,41 @@ class SearchEngine():
 
     def delete(self):
         print("Running delete")
+        docFile = 'docs.pickle'
+        linksFile = 'links.pickle'
+        if os.path.isfile(docFile):
+            os.remove(docFile)
+        if os.path.isfile(linksFile):
+            os.remove(linksFile)
 
     def train(self):
-        print("Running train")
-        self.crawl.collect(self.root, 0)
-        self.crawl.crawl()
-        doc = self.crawl.get_documents()
-        links = self.crawl.get_links()
-        clean_doc = self.crawl.clean(doc)
-        self.clean_docs = clean_doc
 
-        print("Writing to Docs")
-        f = open("docs.pickle", 'a')
-        for i in clean_doc:
-            for j in i:
-                print(j)
-                if j != "\n":
-                    f.write(j+"\n")
-        f.close()
+        trigger = 0
+        if path.exists("docs.pickle"):
+            if path.exists("links.pickle"):
+                with open("docs.pickle", 'rb') as f:
+                    self.clean_docs = pickle.load(f)
 
-        print("Writing to Links")
-        f = open("links.pickle", "a")
-        for i in links:
-            f.write(i + "\n")
-        f.close()
+                with open("links.pickle", 'rb') as f:
+                    self.links = pickle.load(f)
+
+                print(self.links)
+                trigger = 1
+
+        if trigger == 0:
+            print("Running train")
+            self.crawl.collect(self.root, 0)
+            self.crawl.crawl()
+            doc = self.crawl.get_documents()
+            links = self.crawl.get_links()
+            clean_doc = self.crawl.clean(doc)
+            self.clean_docs = clean_doc
+
+            with open("docs.pickle", 'wb') as f:
+                pickle.dump(self.clean_docs, f)
+
+            with open("links.pickle", 'wb') as f:
+                pickle.dump(links, f)
 
         self.compute_td_idf()
 
@@ -59,9 +76,10 @@ class SearchEngine():
         print("Exiting")
         exit()
 
-    def handel_query(self, var):
+    def handle_query(self, var):
         print("Handeling query")
-        print(var)
+        self.query = var
+        self.compute_td_idf()
 
     def listen(self):
         print("Listening")
@@ -70,7 +88,6 @@ class SearchEngine():
     def compute_td_idf(self):
         print("Computing td idf")
 
-        print(self.clean_docs[0])
         # Step 2: Vectorize the documents
         # Use the Scikit-learn built-in vectorizer.
 
@@ -78,7 +95,7 @@ class SearchEngine():
         tfidf_vectorizer = TfidfVectorizer()
 
         # Send our docs into the Vectorizer
-        tfidf_vectorizer_vectors = tfidf_vectorizer.fit_transform(self.clean_docs[0])
+        tfidf_vectorizer_vectors = tfidf_vectorizer.fit_transform(self.clean_docs)
 
         # Transpose the result into a more traditional TF-IDF matrix, and convert it to an array.
         X = tfidf_vectorizer_vectors.T.toarray()
@@ -88,7 +105,8 @@ class SearchEngine():
 
         # [ RETRIEVAL STAGE ]
 
-        query = 'and'
+        query = self.query
+        print(self.query)
 
         # Vectorize the query.
         q = [query]
@@ -102,7 +120,22 @@ class SearchEngine():
         # Sort the values
         sim_sorted = sorted(sim.items(), key=lambda x: x[1], reverse=True)
 
+
         # Print the articles and their similarity values
+        print(self.clean_docs)
+
+        num = 0
+        if len(self.links) < 100:
+            num = 2
+        elif len(self.links) < 1000:
+            num = 3
+        elif len(self.links) < 10000:
+            num = 4
+
         for k, v in sim_sorted:
-            if v != 0.0:
-                print("[DOCUMENT " + str(k) + "] - (" + str("{:.2f}".format(v)) + ')')
+            if v > 0:
+                index = self.clean_docs[k]
+                index = index[:num]
+                index = re.sub("[^0-9]", "",index)
+                print(str(self.links[int(index) + 1]) + " [DOCUMENT " + str(k) + "] - (" + str("{:.2f}".format(v)) + ')')
+
