@@ -10,8 +10,8 @@ class SearchInterface():
         self.query = query
 
     def listen(self):
-        if self.mode == 'c' and self.query != '':
-            self.engine.handel_query(self.query)
+        if self.mode == 'c':
+            self.engine.handle_query(self.query)
         elif self.mode == 'i':
             print("----------------------------------")
             print("|         UTK EECS SEARCH        |")

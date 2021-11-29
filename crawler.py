@@ -115,11 +115,6 @@ class WebCrawler():
 
         if self.verbose == 't':
             print("COLLECTING LINKS - DONE")
-        # # Print a summary of findings.
-        # print('Number of Paragraphs: ' + str(len(paragraphs)))
-        # print('Number of Links: ' + str(len(links)))
-        #
-        # print('Number of New Links: ' + str(len(new_links)))
 
 
     def crawl(self):
@@ -136,6 +131,7 @@ class WebCrawler():
 
         link_counter = -1
         for i in self.links:
+            link_counter += 1
             print("ON LINK", link_counter)
             temp = []
             if self.verbose == 't':
@@ -149,13 +145,7 @@ class WebCrawler():
             try:
                 page = urlopen(req)
             except:
-                link_counter += 1
                 continue
-            # except HTTPError as err:
-            #     print(err.code)
-                # if err.code == 403:
-                #     print(err.code)
-                # else:
 
             # Create an object to parse the HTML format
             soup = BeautifulSoup(page, 'html.parser')
@@ -171,16 +161,14 @@ class WebCrawler():
                 for i in j.find_all('p'):
                     if i.text != '':
                         temp = i.text
-                        temp = temp + str(link_counter)
+                        temp = str(link_counter) + temp + str(link_counter)
                         paragraphs.append(temp)
 
             for j in soup.find_all('table', {'class': "table_default"}):
                 if j.text != '':
                     temp = j.text
-                    temp = temp + str(link_counter)
+                    temp = str(link_counter) + temp + str(link_counter)
                     paragraphs.append(temp)
-
-            link_counter += 1
 
         self.set_documents(paragraphs)
 

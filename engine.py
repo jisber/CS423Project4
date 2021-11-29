@@ -16,11 +16,12 @@ import warnings
 
 class SearchEngine():
 
-    def __init__(self, root, mode, query, verbose):
+    def __init__(self, root, mode, query, verbose, depth):
         self.root = root
         self.mode = mode
         self.query = query
         self.verbose = verbose
+        self.depth = depth
 
         # self.engine = SearchEngine(self.root, self.mode, self.query, self.verbose):exi
         self.crawl = crawler.WebCrawler(self.root, self.verbose)
@@ -29,11 +30,9 @@ class SearchEngine():
         self.links = []
 
     def start(self):
-        print("Running start")
         self.listen()
 
     def delete(self):
-        print("Running delete")
         docFile = 'docs.pickle'
         linksFile = 'links.pickle'
         if os.path.isfile(docFile):
@@ -42,7 +41,6 @@ class SearchEngine():
             os.remove(linksFile)
 
     def train(self):
-
         trigger = 0
         if path.exists("docs.pickle"):
             if path.exists("links.pickle"):
@@ -52,15 +50,14 @@ class SearchEngine():
                 with open("links.pickle", 'rb') as f:
                     self.links = pickle.load(f)
 
-                print(self.links)
                 trigger = 1
 
         if trigger == 0:
             print("Running train")
-            self.crawl.collect(self.root, 0)
+            self.crawl.collect(self.root, self.depth)
             self.crawl.crawl()
             doc = self.crawl.get_documents()
-            links = self.crawl.get_links()
+            self.links = self.crawl.get_links()
             clean_doc = self.crawl.clean(doc)
             self.clean_docs = clean_doc
 
@@ -68,61 +65,38 @@ class SearchEngine():
                 pickle.dump(self.clean_docs, f)
 
             with open("links.pickle", 'wb') as f:
-                pickle.dump(links, f)
+                pickle.dump(self.links, f)
 
-        self.compute_td_idf()
+            self.compute_td_idf()
 
     def exit(self):
-        print("Exiting")
         exit()
 
     def handle_query(self, var):
-        print("Handeling query")
+        if len(self.clean_docs) <= 0:
+            self.train()
+
         self.query = var
-        self.compute_td_idf()
-
-    def listen(self):
-        print("Listening")
-        self.interface.listen()
-
-    def compute_td_idf(self):
-        print("Computing td idf")
-
-        # Step 2: Vectorize the documents
-        # Use the Scikit-learn built-in vectorizer.
-
-        # Instantiate the Tfidfvectorizer
-        tfidf_vectorizer = TfidfVectorizer()
-
-        # Send our docs into the Vectorizer
-        tfidf_vectorizer_vectors = tfidf_vectorizer.fit_transform(self.clean_docs)
-
-        # Transpose the result into a more traditional TF-IDF matrix, and convert it to an array.
-        X = tfidf_vectorizer_vectors.T.toarray()
-
-        # Convert the matrix into a dataframe using feature names as the dataframe index.
-        df = pd.DataFrame(X, index=tfidf_vectorizer.get_feature_names())
-
+        df, tdif = self.compute_td_idf()
         # [ RETRIEVAL STAGE ]
 
         query = self.query
         print(self.query)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'invalid value encountered in double_scalars')
+            # Vectorize the query.
+            q = [query]
+            q_vec = tdif.transform(q).toarray().reshape(df.shape[0], )
+            # Calculate cosine similarity.
+            sim = {}
+            for i in range(len(df.columns) - 1):
+                sim[i] = np.dot(df.loc[:, i].values, q_vec) / np.linalg.norm(df.loc[:, i]) * np.linalg.norm(q_vec)
 
-        # Vectorize the query.
-        q = [query]
-        q_vec = tfidf_vectorizer.transform(q).toarray().reshape(df.shape[0], )
-
-        # Calculate cosine similarity.
-        sim = {}
-        for i in range(len(df.columns) - 1):
-            sim[i] = np.dot(df.loc[:, i].values, q_vec) / np.linalg.norm(df.loc[:, i]) * np.linalg.norm(q_vec)
-
-        # Sort the values
-        sim_sorted = sorted(sim.items(), key=lambda x: x[1], reverse=True)
-
+            # Sort the values
+            sim_sorted = sorted(sim.items(), key=lambda x: x[1], reverse=True)
 
         # Print the articles and their similarity values
-        print(self.clean_docs)
+        # print(self.clean_docs)
 
         num = 0
         if len(self.links) < 100:
@@ -132,10 +106,37 @@ class SearchEngine():
         elif len(self.links) < 10000:
             num = 4
 
+        count = 1
+        break_count = -1
         for k, v in sim_sorted:
             if v > 0:
+                break_count = 1
                 index = self.clean_docs[k]
                 index = index[:num]
-                index = re.sub("[^0-9]", "",index)
-                print(str(self.links[int(index) + 1]) + " [DOCUMENT " + str(k) + "] - (" + str("{:.2f}".format(v)) + ')')
+                index = re.sub("[^0-9]", "", index)
+                print( "[" + str(count) + "] " + str(self.links[int(index)]) + " - (" + str("{:.2f}".format(v)) + ')')
+                count += 1
+                if count > 5:
+                    break
 
+        if break_count == -1:
+            print("Your search did not match any documents")
+
+    def listen(self):
+        self.interface.listen()
+
+    def compute_td_idf(self):
+        # Step 2: Vectorize the documents
+        # Use the Scikit-learn built-in vectorizer.
+        # Instantiate the Tfidfvectorizer
+        tfidf_vectorizer = TfidfVectorizer()
+
+        # Send our docs into the Vectorizer
+        tfidf_vectorizer_vectors = tfidf_vectorizer.fit_transform(self.clean_docs)
+
+        # Transpose the result into a more traditional TF-IDF matrix, and convert it to an array.
+        X = tfidf_vectorizer_vectors.T.toarray()
+        # Convert the matrix into a dataframe using feature names as the dataframe index.
+        df = pd.DataFrame(X, index=tfidf_vectorizer.get_feature_names_out())
+
+        return df, tfidf_vectorizer

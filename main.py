@@ -83,14 +83,10 @@ def parseLink(link):
 if __name__ == "__main__":
     commands = handle_command(sys.argv)
 
-    # print(commands)
-
     root = commands[0]
     mode = commands[1]
     query = commands[2]
     verbose = commands[3]
 
-    print(root, mode, query, verbose)
-
-    search_engine = engine.SearchEngine(root, mode, query, verbose)
+    search_engine = engine.SearchEngine(root, mode, query, verbose, 0)
     search_engine.start()
