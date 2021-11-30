@@ -1,8 +1,10 @@
 # Jacob Isber
 # This program is a basic search engine. It takes a starter link and then from there it scrapes and stores information.
 # It will then take in a query which
+# Rev 1.2
 import sys
 import engine
+
 
 def handle_command(command_line):
     '''
@@ -21,7 +23,7 @@ def handle_command(command_line):
         temp_list.append(i)
 
     if '-mode' not in temp_list:
-        print("ERROR: Missing required arguments",file=sys.stderr)
+        print("ERROR: Missing required arguments", file=sys.stderr)
         exit(1)
     elif '-root' not in temp_list:
         print("ERROR: Missing required arguments", file=sys.stderr)

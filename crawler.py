@@ -220,8 +220,6 @@ class WebCrawler():
         print("CLEANING TEXT - STARTED")
         decode_list = []
 
-        print(len(text_list))
-
         for i in text_list:
             # Removes all uni - code
             strencode = i.encode("ascii", "ignore")
