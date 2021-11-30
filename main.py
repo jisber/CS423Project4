@@ -1,7 +1,8 @@
+# Jacob Isber
+# This program is a basic search engine. It takes a starter link and then from there it scrapes and stores information.
+# It will then take in a query which
 import sys
-
 import engine
-
 
 def handle_command(command_line):
     '''
@@ -81,6 +82,9 @@ def parseLink(link):
 
 
 if __name__ == "__main__":
+    """
+     The main function that handles the main run of the program
+    """
     commands = handle_command(sys.argv)
 
     root = commands[0]
@@ -88,5 +92,8 @@ if __name__ == "__main__":
     query = commands[2]
     verbose = commands[3]
 
-    search_engine = engine.SearchEngine(root, mode, query, verbose, 0)
+    # Creates an instance of searchEngine
+    search_engine = engine.SearchEngine(root, mode, query, verbose, 1)
+
+    # Creates a start
     search_engine.start()

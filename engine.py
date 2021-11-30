@@ -1,6 +1,3 @@
-# Jacob Isber
-# File:
-# Desc:
 import os
 
 import crawler
@@ -17,6 +14,14 @@ import warnings
 class SearchEngine():
 
     def __init__(self, root, mode, query, verbose, depth):
+        """
+        Default constructor for SearchEngine
+        :param root: Link
+        :param mode: interactive (i) or command-line (c)
+        :param query: Query Key
+        :param verbose: t or f variable that is used to print debugging information
+        :param depth: Depth to collect links at
+        """
         self.root = root
         self.mode = mode
         self.query = query
@@ -32,18 +37,32 @@ class SearchEngine():
         self.num = 2
 
     def start(self):
+        """
+        Calls self.listen and starts the entire search engine
+        :return: None
+        """
         self.listen()
 
     def delete(self):
-        docFile = 'docs.pickle'
-        linksFile = 'links.pickle'
-        if os.path.isfile(docFile):
-            os.remove(docFile)
-        if os.path.isfile(linksFile):
-            os.remove(linksFile)
+        """
+        Deletes pickle files
+        :return: None
+        """
+        doc = 'docs.pickle'
+        links = 'links.pickle'
+        if os.path.isfile(doc):
+            os.remove(doc)
+        if os.path.isfile(links):
+            os.remove(links)
 
     def train(self):
+        """
+        When ran, will either collect and crawl the links or load the information from pickle files
+        :return: None
+        """
         trigger = 0
+
+        # If the pickle files exist load it
         if path.exists("docs.pickle"):
             if path.exists("links.pickle"):
                 with open("docs.pickle", 'rb') as f:
@@ -55,6 +74,7 @@ class SearchEngine():
                 trigger = 1
 
         if trigger == 0:
+            # Else Run collect, crawl, and clean
             print("Running train")
             self.crawl.collect(self.root, self.depth)
             self.crawl.crawl()
@@ -72,18 +92,33 @@ class SearchEngine():
             self.compute_td_idf()
 
     def exit(self):
+        """
+        Exits the program
+        :return: None
+        """
         exit()
 
     def handle_query(self, var):
+        """
+        Handles the query recieved from listen
+        :param var: the query from var
+        :return: None
+        """
+
+        # Calls train if the training set has not been ran before
         if len(self.clean_docs) <= 0:
             self.train()
 
         self.query = var
+
+        # Computes td_idf
         df, tdif = self.compute_td_idf()
         # [ RETRIEVAL STAGE ]
 
         query = self.query
-        print(self.query)
+        #print(self.query)
+
+        # Computes cosine similarities
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', 'invalid value encountered in double_scalars')
             # Vectorize the query.
@@ -100,7 +135,6 @@ class SearchEngine():
         # Print the articles and their similarity values
         # print(self.clean_docs)
 
-        # num = 0
         if len(self.links) < 100:
             self.num = 2
         elif len(self.links) < 1000:
@@ -108,6 +142,7 @@ class SearchEngine():
         elif len(self.links) < 10000:
             self.num = 4
 
+        # The rest of this is just how I print out the search answers
 
         used_links = []
         count = 1
@@ -119,43 +154,40 @@ class SearchEngine():
                 index = index[:self.num]
                 index = re.sub("[^0-9]", "", index)
                 if self.links[int(index)] not in used_links:
-                    print( "[" + str(count) + "] " + str(self.links[int(index)]) + " - (" + str("{:.2f}".format(v)) + ')')
-                    used_links.append(self.links[int(index)])
-                    count += 1
-                    if count > 5:
-                        break
+                    expected_string = self.links[int(index)][:5]
+                    if expected_string == "https":
+                        tmp_link = str(self.links[int(index)])
+                        tmp_link = list(tmp_link)
+                        tmp_link[4] = ''
+                        tmp_link = "".join(tmp_link)
+                        if tmp_link not in used_links:
+                            print("[" + str(k) + "] " + str(self.links[int(index)]) + " - (" + str(
+                                "{:.2f}".format(v)) + ')')
+                            used_links.append(tmp_link)
+                            count += 1
+                            if count > 5:
+                                break
+                    else:
+                        print("[" + str(k) + "] " + str(self.links[int(index)]) + " - (" + str(
+                            "{:.2f}".format(v)) + ')')
+                        used_links.append(self.links[int(index)])
+                        count += 1
+                        if count > 5:
+                            break
 
         if break_count == -1:
             print("Your search did not match any documents")
 
     def listen(self):
+        # Calls the listen interface
         self.interface.listen()
 
     def compute_td_idf(self):
-        # print(self.clean_docs[:12])
-        #
-        # def parse_string(i):
-        #     tmp_l = i.split()
-        #     tmp_str = tmp_l[0]
-        #     index = re.sub("[^0-9]", "", tmp_str)
-        #     return index
-        #
-        # con = 0
-        # curr_para = None
-        # tmp_para = []
-        # for count, i in enumerate(self.clean_docs):
-        #     curr_str = i
-        #     next_str = self.clean_docs[count + 1]
-        #     curr_str_para = parse_string(curr_str)
-        #     next_str_para = parse_string(self.clean_docs[count + 1])
-        #     if curr_str_para == next_str_para:
-        #         curr_para = curr_str + next_str
-        #     else:
-        #         tmp_para.append(curr_para)
-        #     con += 1
-        #     if con == 12:
-        #         print(tmp_para)
-        #         exit()
+        """
+        Vectorized the documents that uses scikit-learn
+        :return: dataframe and a tfidf_vectorized
+        """
+
         # Step 2: Vectorize the documents
         # Use the Scikit-learn built-in vectorizer.
         # Instantiate the Tfidfvectorizer

@@ -1,7 +1,3 @@
-# Jacob Isber
-# File:
-# Desc:
-# Requests + BeautifulSoup
 import string
 
 import requests
@@ -12,33 +8,57 @@ import re
 
 
 class WebCrawler():
+
     def __init__(self, root, verbose):
+        """
+        Default constructor for WebCrawler
+        :param root: link
+        :param verbose: t or f variable that is used to print debugging information
+        """
         self.root = root
         self.verbose = verbose
         self.links = None
-        #self.paragraphs = None
         self.tables = None
         self.documents = None
         self.link_doc_dict = {}
+
     def get_documents(self):
-        #print("CLEANING TEXT - STARTED")
-        #print(self.documents)
-        #print("CLEANING TEXT - DONE")
+        """
+        Gets the documents
+        :return: list of documents
+        """
         return self.documents
 
     def set_documents(self, d):
+        """
+        Sets the documents
+        :param d: list of documents
+        :return: None
+        """
         self.documents = d
 
     def get_links(self):
-        print("Returning Links")
-        #print(self.links)
+        """
+        Gets the links
+        :return: All links
+        """
         return self.links
 
     def set_links(self, l):
+        """
+        Takes in a list and sets the links
+        :param l: list of links
+        :return: None
+        """
         self.links = l
 
     def collect(self, s, d):
-
+        """
+        Grabs all the links possible from the provided link
+        :param s: Start Link
+        :param d: Depth
+        :return: None
+        """
         if self.verbose == 't':
             print("COLLECTING LINKS - STARTED")
 
@@ -64,8 +84,8 @@ class WebCrawler():
         paragraphs = []
 
         links = []
-
         counter = 1
+        # First interation that goes through and grabs all the original links on depth 0
         for k in soup.find_all('a', href=True):
             if self.verbose == 't':
                 print("COLLECTED: LINK(" + str(counter) + ")")
@@ -83,53 +103,68 @@ class WebCrawler():
         links = list(set(links))
 
         new_links = []
+        depth_counter = 0
+
+        # If the depth is greater than 0 go through the original links and grab all the links in a recurring way
         if d >= 1:
-            for i in links:
-                if self.verbose == 't':
-                    print("COLLECTED: LINK(" + str(counter) + ")")
-                    counter += 1
-                site = i
-                hdr = {'User-Agent': 'Mozilla/5.0'}
-                req = Request(site, headers=hdr)
+            while depth_counter <= d:
+                print("YOU ARE AT DEPTH ", depth_counter)
+                for i in links:
+                    print("ON LINK", i)
+                    if self.verbose == 't':
+                        print("COLLECTED: LINK(" + str(counter) + ")")
+                        counter += 1
+                    site = i
+                    hdr = {'User-Agent': 'Mozilla/5.0'}
+                    req = Request(site, headers=hdr)
 
-                try:
-                    page = urlopen(req)
-                except HTTPError as err:
-                    print(err.code)
+                    try:
+                        page = urlopen(req)
+                    except HTTPError as err:
+                        print(err.code)
 
-                soup = BeautifulSoup(page, 'html.parser')
+                    soup = BeautifulSoup(page, 'html.parser')
 
-                for k in soup.find_all('a', href=True):
-                    expected_string = (k['href'])
-                    if "http" in expected_string:
-                        if k['href'].find("utk.edu") != -1:
-                            new_links.append(k['href'])
-                    elif "https" in expected_string:
-                        if k['href'].find("utk.edu") != -1:
-                            new_links.append(k['href'])
+                    for k in soup.find_all('a', href=True):
+                        expected_string = (k['href'])
+                        if "http" in expected_string:
+                            if k['href'].find("utk.edu") != -1:
+                                new_links.append(k['href'])
+                        elif "https" in expected_string:
+                            if k['href'].find("utk.edu") != -1:
+                                new_links.append(k['href'])
 
-        new_links = new_links + links
-        new_links = list(set(new_links))
+                depth_counter += 1
+                new_links = new_links + links
+                new_links = list(set(new_links))
+        else:
+            new_links = new_links + links
+            new_links = list(set(new_links))
 
+        # Set the links
         self.set_links(new_links)
 
+        print(len(self.links))
+        print(self.links)
         if self.verbose == 't':
             print("COLLECTING LINKS - DONE")
 
-
     def crawl(self):
-
+        """
+        Crawls all through links and collects all thr paragrpahs
+        :return: None
+        """
         if self.verbose == 't':
             print("CRAWLING LINKS - STARTED")
 
         # Retrieve all popular news links (Fig. 1)
         paragraphs = []
-        tables = []
-        links = []
 
         counter = 0
 
         link_counter = -1
+
+        # Starts the for loop to go and grab every link
         for i in self.links:
             link_counter += 1
             print("ON LINK", link_counter)
@@ -150,6 +185,7 @@ class WebCrawler():
             # Create an object to parse the HTML format
             soup = BeautifulSoup(page, 'html.parser')
 
+            # Grabs all entry-content, person_content, table_default from the text
             for j in soup.find_all('div', {'class': "entry-content"}):
                 for i in j.find_all('p'):
                     if i.text != '':
@@ -172,13 +208,15 @@ class WebCrawler():
 
         self.set_documents(paragraphs)
 
-        #print("DICT", self.link_doc_dict)
-
         if self.verbose == 't':
             print("CRAWLING LINKS - DONE")
 
     def clean(self, text_list):
-
+        """
+        My clean function that clenses the text
+        :param text_list: List of paragraphs
+        :return: a list of clean paragraphs
+        """
         print("CLEANING TEXT - STARTED")
         decode_list = []
 
@@ -190,10 +228,10 @@ class WebCrawler():
             strdecode = strencode.decode()
 
             # Removes all twitter handels
-            strdecode = re.sub('@[^\s]+','',strdecode)
+            strdecode = re.sub('@[^\s]+', '', strdecode)
 
             # Removes all punctuation
-            strdecode = re.sub(' +', ' ',strdecode)
+            strdecode = re.sub(' +', ' ', strdecode)
 
             strdecode = strdecode.strip()
 
